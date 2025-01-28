@@ -1,64 +1,47 @@
 import { sendCookie } from '../utils/cookie.js';
-import passport from "../utils/passport_config.js"
-
+import ErrorHandler from '../middleware/error.js';
+import bcrypt from "bcrypt";
 
 import { User } from '../model/user.js';
 
 
 
-export const loginUser = async (req,res) => {
+export const loginUser = async (req, res, next) => {
   try {
-    const { sub, email } = req.body;
+    const { email, password } = req.body;
 
-    // Checking if the user is registered
-    const userExists = await User.findOne({ googleId: sub });
-    if (userExists) {
-      // Generating JWT token for further requests
-      sendCookie(userExists, res, `Welcome back,`, 200);
-      
-    } else {
-      // If the user account is not registered, throwing a 404 error
-      const error = new Error(
-        "User doesn't exist. Please create an account to create short URLs."
-      );
-      console.error(error);
-    return res.status(500).json({ message: 'Server error' });
-    }
-  } catch (err) {
-    console.error(error);
-    return res.status(500).json({ message: 'Server error' });
+    const user = await User.findOne({ email }).select("+password");
+
+    if (!user) return next(new ErrorHandler("Invalid Email or Password", 400));
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch)
+      return next(new ErrorHandler("Invalid Email or Password", 400));
+
+    sendCookie(user, res, `Welcome back, ${user.name}`, 200);
+  } catch (error) {
+    next(error);
   }
 };
 
-export const registerUser = async (req,res) => {
+export const registerUser = async (req, res) => {
   try {
-    const { sub, name, email } = req.body;
+    const { name, email, password } = req.body;
 
-    // Checking if a user with the same Google ID already exists
-    const existingUser = await User.findOne({ googleId: sub });
-    if (existingUser) {
-      const error = new Error(
-        "Account already exists. Please log in to create URLs and view analytics."
-      );
-      console.error(error);
-    return res.status(500).json({ message: 'Server error' });
-    }
+    let user = await User.findOne({ email });
 
-    // Registering the user
-    const newUser = new User({
-      googleId: sub,
-      name: name,
-      email: email,
-    });
-    const savedUser = await newUser.save();
+    if (user) return next(new ErrorHandler("User Already Exist", 400));
 
-    if (savedUser) {
-      sendCookie(savedUser, res, `Welcome back,`, 200);
-    }
-  } catch (err) {
-    console.error(error);
-    return res.status(500).json({ message: 'Server error' });
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    user = await User.create({ name, email, password: hashedPassword });
+
+    sendCookie(user, res, "Registered Successfully", 201);
+  } catch (error) {
+    next(error);
   }
 };
+
 
 
