@@ -1,24 +1,42 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const shortUrlSchema = new mongoose.Schema({
-  longUrl: {
-    type: String,
-    required: true,
-  },
-  shortUrl: {
-    type: String,
-    unique: true,
-    required: true,
-  },
-  topic: {
-    type: String,
-    default: null,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
+const { Schema, model } = mongoose;
 
-const ShortUrl = mongoose.model('ShortUrl', shortUrlSchema);
+// Define the ShortUrl schema
+const shortUrlSchema = new Schema(
+  {
+    
+    uid: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: false,
+    },
+    originalUrl: {
+      type: String,
+      required: true,
+      validate: {
+        validator: function (v) {
+          return /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i.test(v);
+        },
+        message: "Invalid URL format",
+      },
+    },
+    alias: {
+      type: String,
+      unique: true
+    },
+    topic: {
+      type: String,
+      default: "Other",
+      required: false,
+    },
+  },
+  {
+    timestamps: true, // to add createdAt and updatedAt automatically
+  }
+);
+
+// Create the model from the schema
+const ShortUrl = model("ShortUrl", shortUrlSchema);
+
 export default ShortUrl;
