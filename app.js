@@ -4,9 +4,11 @@ import passport from "passport";
 import dotenv from 'dotenv'
 import router from "./routes/auth.js";
 import UrlRouter from "./routes/url.js";
+import analyticsRouter from "./routes/analytics.js";
+import cookieParser from "cookie-parser";
 
 export const app = express();
-
+app.use(cookieParser())
 // Express session configuration
 app.use(
   session({
@@ -17,11 +19,11 @@ app.use(
   })
 );
 app.use(express.json())
-// Initialize Passport and restore authentication state from the session
+
 app.use(passport.initialize());
-app.use(passport.session()); // This enables persistent login sessions
+app.use(passport.session()); 
 
 dotenv.config();
-//console.log(process.env.GOOGLE_CLIENT_ID)
 app.use("/api/auth",router)
 app.use("/api",UrlRouter)
+app.use("/api/analytics",analyticsRouter)

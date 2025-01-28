@@ -1,15 +1,22 @@
 
 import express from "express";
-import passport from "passport";
+import { tokenVerify } from "../middleware/token.js";
+import { loginUser,registerUser} from "../Controllers/auth.js";
+
 const router=express.Router();
-import { googleAuth,googleCallback } from "../Controllers/auth.js";
-router.get('/google', googleAuth);
+
+
+
 
 // Google Callback Route
-router.get(
-  '/google/callback',
-  passport.authenticate('google', { failureRedirect: '/' }),
-  googleCallback
+router.post(
+	"/login",tokenVerify,loginUser
 );
+router.post(
+	"/register",
+	tokenVerify,
+	registerUser
+);
+
 
 export default router;
